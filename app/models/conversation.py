@@ -1,9 +1,9 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 MODES = {
-    "free_conversation": "Free Conversation",
+    "free_conversation": "Normal Conversation",
     "targeted_practice": "Targeted Practice",
     "workplace_english": "Workplace English",
 }
@@ -101,5 +101,13 @@ class MessageIn(BaseModel):
         return value
 
 
-class ApiKeyIn(BaseModel):
-    api_key: str = Field(min_length=8, max_length=512)
+class ProviderIn(BaseModel):
+    mode: Literal["lmstudio", "google"]
+    api_key: str = Field(default="", max_length=512)
+    model: str = Field(default="", max_length=120)
+
+    @model_validator(mode="after")
+    def _google_needs_key(self):
+        if self.mode == "google" and len(self.api_key.strip()) < 8:
+            raise ValueError("Paste your Google AI Studio API key to use Google.")
+        return self

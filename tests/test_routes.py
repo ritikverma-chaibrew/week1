@@ -125,6 +125,32 @@ def test_practice_modes_listing(client):
     assert len(body["scenarios"]) == 9 and len(body["modes"]) == 3
 
 
-def test_byok_requires_server_url_and_never_echoes_key(client):
-    response = client.put("/api/session/key", json={"api_key": "super-secret-key"})
+def test_provider_choice_never_echoes_key(client):
+    response = client.put(
+        "/api/session/provider", json={"mode": "google", "api_key": "super-secret-key"}
+    )
+    assert response.status_code == 204
     assert "super-secret-key" not in response.text
+
+
+def test_google_requires_key_but_lmstudio_does_not(client):
+    assert client.put("/api/session/provider", json={"mode": "google"}).status_code == 422
+    assert client.put("/api/session/provider", json={"mode": "lmstudio"}).status_code == 204
+    assert client.put("/api/session/provider", json={"mode": "bogus"}).status_code == 422
+
+
+def test_model_dropdown_lists(client):
+    google = client.post("/api/session/models", json={"mode": "google"}).json()
+    assert google["models"] == [] and "error" in google  # no key: nothing invented, just a hint
+    assert client.post("/api/session/models", json={"mode": "x"}).status_code == 422
+
+
+def test_provider_status_masks_key_and_can_be_deleted(client):
+    client.put("/api/session/provider", json={"mode": "google", "api_key": "super-secret-key", "model": "gemma-3-4b-it"})
+    status = client.get("/api/session/provider")
+    body = status.json()
+    assert "super-secret-key" not in status.text
+    assert body["key_masked"] == "**********" and body["model"] == "gemma-3-4b-it"
+    assert 0 < body["expires_in"] <= 1800
+    client.delete("/api/session/provider")
+    assert client.get("/api/session/provider").json().get("mode") != "google"
