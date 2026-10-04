@@ -35,14 +35,14 @@ def test_app_starts_without_ai_credentials(monkeypatch):
     with TestClient(app) as client:
         body = client.get("/api/health").json()
         assert body["ai"] == "unconfigured"
-        assert "AI provider unavailable" in body["ai_message"]
-        # Free conversation can be opened; sending a message explains how to enable AI.
+        assert "coach is not available" in body["ai_message"]
+        # Normal conversation can be opened; sending a message says the coach is unavailable until a key is connected.
         created = client.post("/api/conversations", json={}).json()
         reply = client.post(
             f"/api/conversations/{created['conversation']['id']}/messages", json={"content": "Hi"}
         )
         assert reply.status_code == 503
-        assert "GEMMA_API_URL" in reply.json()["detail"]
+        assert "connect an API key" in reply.json()["detail"]
         assert "Traceback" not in reply.text
 
 
@@ -54,4 +54,4 @@ def test_invalid_config_message(monkeypatch):
     with TestClient(app) as client:
         body = client.get("/api/health").json()
         assert body["ai"] == "invalid"
-        assert "not configured correctly" in body["ai_message"]
+        assert "coach is not available" in body["ai_message"]

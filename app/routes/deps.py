@@ -13,7 +13,7 @@ from app.services.ai.base import AIProvider
 
 COOKIE = "epa_uid"
 COOKIE_MAX_AGE = 60 * 60 * 24 * 365
-BYOK_TTL_SECONDS = 60 * 60
+BYOK_TTL_SECONDS = 30 * 60
 _UID = re.compile(r"^u-[0-9a-f]{32}$")
 
 
@@ -65,15 +65,19 @@ async def current_user(
     return user_id
 
 
-def _byok_key(request: Request, user_id: str) -> str | None:
+def _session_ai(request: Request, user_id: str) -> dict | None:
     entry = request.app.state.byok.get(user_id)
     if not entry:
         return None
-    key, expires = entry
-    if expires < time.monotonic():
+    session, expires = entry
+    now = time.monotonic()
+    if expires < now:
         request.app.state.byok.pop(user_id, None)
         return None
-    return key
+    # Sliding expiry: an active learner is never dropped. The browser keeps the choice and
+    # re-sends it if this in-memory copy is ever lost (restart or long idle).
+    request.app.state.byok[user_id] = (session, now + BYOK_TTL_SECONDS)
+    return session
 
 
 def get_provider_factory(
@@ -87,7 +91,7 @@ def get_provider_factory(
         override = getattr(request.app.state, "provider", None)
         if override is not None:  # injected provider (tests)
             return override
-        return build_provider(settings, _byok_key(request, user_id))
+        return build_provider(settings, _session_ai(request, user_id))
 
     return factory
 
@@ -95,6 +99,6 @@ def get_provider_factory(
 def ai_state_for(request: Request, user_id: str | None, settings: Settings) -> str:
     if getattr(request.app.state, "provider", None) is not None:
         return "live"
-    if user_id and _byok_key(request, user_id) and (settings.gemma_api_url or "").strip():
+    if user_id and _session_ai(request, user_id):
         return "live"
     return settings.ai_state

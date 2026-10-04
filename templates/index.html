@@ -16,6 +16,7 @@
     </button>
     <span class="brand-mark" aria-hidden="true">EP</span>
     <strong>English Practice</strong>
+    <a href="#practice" class="ai-dot" id="ai-dot" data-status="checking" aria-label="Checking coach"></a>
   </div>
   <div class="scrim" id="scrim" hidden></div>
 
@@ -36,6 +37,11 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
         <span>Practice</span>
       </a>
+      <div class="side-sub" aria-label="Practice modes">
+        <a href="#practice" data-mode="free_conversation"><span>Normal conversation</span></a>
+        <a href="#practice" data-mode="targeted_practice"><span>Targeted practice</span></a>
+        <a href="#practice" data-mode="workplace_english"><span>Workplace English</span></a>
+      </div>
       <a href="#progress" data-nav="progress">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
         <span>Progress</span>
@@ -47,12 +53,16 @@
     </nav>
 
     <div class="side-foot">
+      <a href="#practice" class="ai-badge" id="ai-badge" data-status="checking" role="status" aria-live="polite"></a>
       <p class="side-note">Powered by Gemma</p>
     </div>
   </aside>
 
   <div class="content">
-  <div id="banner" class="banner" role="status" hidden></div>
+  <div id="banner" class="banner" role="status" hidden>
+    <span id="banner-text"></span>
+    <button type="button" class="btn btn-small banner-btn" id="banner-connect">Connect now</button>
+  </div>
 
   <main id="main" tabindex="-1">
     <!-- HOME -->
@@ -90,33 +100,56 @@
 
     <!-- PRACTICE -->
     <section id="view-practice" class="view" aria-labelledby="practice-title" hidden>
-      <div id="setup">
-        <h1 id="practice-title" class="page-title">Choose how to practice</h1>
-        <div class="tabs" role="tablist" aria-label="Practice mode" id="mode-tabs"></div>
-        <div id="mode-panel" class="card" role="tabpanel"></div>
-        <details class="byok">
-          <summary>Use your own Gemma API key</summary>
+      <div class="practice-layout">
+      <aside class="provider-panel" aria-label="AI provider">
+      <div id="provider-status" class="card provider-status" role="status" aria-live="polite"></div>
+        <details class="byok" id="byok-details" open>
+          <summary>AI provider: LM Studio or Google AI Studio</summary>
           <p class="small">New to this? Read the <a href="#guide">setup guide</a>.</p>
           <form id="byok-form" class="byok-form">
-            <label for="byok-input">Gemma API key</label>
-            <input id="byok-input" type="password" autocomplete="off" minlength="8" maxlength="512">
-            <p class="muted small">Kept in server memory for this browser session only. Never stored or shown again.</p>
+            <label for="provider-mode">Run the coach with</label>
+            <select id="provider-mode">
+              <option value="google">Google AI Studio (API key)</option>
+              <option value="lmstudio">Local LM Studio</option>
+            </select>
+            <div id="google-fields">
+              <label for="byok-input">Google AI Studio API key</label>
+              <input id="byok-input" type="password" autocomplete="off" maxlength="512">
+              <p class="muted small">Saved in this browser for 30 minutes, then deleted automatically. You stay connected after a reload until then.</p>
+            </div>
+            <p id="local-note" class="muted small" hidden>Needs LM Studio's server running on <code>localhost:1234</code>, and this app running on the same computer.</p>
+            <label for="provider-model">Model</label>
+            <div class="model-row">
+              <select id="provider-model"></select>
+              <button class="btn btn-ghost btn-small" type="button" id="model-refresh">Refresh</button>
+            </div>
+            <p id="byok-status" class="muted small" role="status" aria-live="polite"></p>
             <div class="actions">
-              <button class="btn btn-ghost btn-small" type="submit">Use key</button>
-              <button class="btn btn-ghost btn-small" type="button" id="byok-clear">Remove key</button>
+              <button class="btn btn-primary btn-small" type="submit" id="byok-connect">Connect</button>
+              <button class="btn btn-ghost btn-small" type="button" id="byok-clear">Disconnect</button>
             </div>
           </form>
         </details>
+      </aside>
+      <div class="practice-main">
+      <div id="setup">
+        <h1 id="practice-title" class="page-title">Choose how to practice</h1>
+        <p class="muted">There are three ways to practice. Pick one, then press <em>Start practice</em>.</p>
+        <h2 class="step-title"><span class="step-num">1</span> Choose a mode</h2>
+        <div class="mode-cards" role="radiogroup" aria-label="Practice mode" id="mode-tabs"></div>
+        <div id="mode-panel" class="card"></div>
       </div>
 
       <div id="chat" hidden>
         <div class="chat-head">
           <div>
+            <span id="chat-mode" class="pill"></span>
             <h1 id="chat-title" class="page-title"></h1>
             <p id="chat-sub" class="muted"></p>
           </div>
-          <button type="button" class="btn btn-ghost btn-small" id="new-session">New session</button>
+          <button type="button" class="btn btn-ghost btn-small" id="new-session">&larr; Change practice mode</button>
         </div>
+        <div id="try-modes" class="try-modes"></div>
         <div id="messages" class="messages" aria-live="polite" aria-label="Conversation"></div>
         <div id="chat-error" class="error" role="alert" hidden></div>
         <form id="composer" class="composer">
@@ -124,6 +157,8 @@
           <textarea id="input" rows="2" maxlength="2000" placeholder="Write your answer… (Enter to send, Shift+Enter for a new line)"></textarea>
           <button class="btn btn-primary" id="send" type="submit">Send</button>
         </form>
+      </div>
+      </div>
       </div>
     </section>
 
@@ -144,13 +179,13 @@
         <p class="muted">Best when you are using the deployed site. Your key is only used to call the model for your session.</p>
         <ol class="steps">
           <li><strong>Get a key.</strong> Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>, sign in and choose <em>Create API key</em>. Copy it.</li>
-          <li><strong>Open the key box.</strong> Go to <a href="#practice">Practice</a> and expand <em>Use your own Gemma API key</em>.</li>
-          <li><strong>Paste and save.</strong> Paste the key and press <em>Use key</em>. The warning banner at the top should disappear.</li>
-          <li><strong>Start practicing.</strong> Pick a mode and press <em>Start practice</em>.</li>
+          <li><strong>Open the provider box.</strong> Go to <a href="#practice">Practice</a> and expand <em>AI provider</em>.</li>
+          <li><strong>Choose Google AI Studio.</strong> Select <em>Google AI Studio (API key)</em> in the dropdown, paste the key and press <em>Connect</em>. The warning banner should disappear.</li>
+          <li><strong>Start practicing.</strong> Pick one of the three mode cards (Normal conversation, Targeted practice, Workplace English) and press <em>Start practice</em>.</li>
         </ol>
         <ul class="notes">
-          <li>The key is kept in server memory for about an hour and is never stored or shown again. Paste it again if it expires.</li>
-          <li>Use <em>Remove key</em> to clear it at any time.</li>
+          <li>The key is saved in this browser's local storage for 30 minutes, then deleted automatically (or sooner with <em>Delete API key</em>). Until then the app reconnects with it automatically. The sidebar shows whether the coach is connected on every page.</li>
+          <li>Use <em>Disconnect</em> to clear it at any time.</li>
           <li>Never share your key or paste it into other people's sites.</li>
         </ul>
       </div>
@@ -162,21 +197,18 @@
           <li><strong>Download a model.</strong> In <a href="https://lmstudio.ai" target="_blank" rel="noopener noreferrer">LM Studio</a>, search for <code>gemma 3 4b</code> and download the instruct version (Q4_K_M).</li>
           <li><strong>Start the server.</strong> Open the <em>Developer</em> tab, load the model and switch the server on. The default address is <code>http://localhost:1234</code>.</li>
           <li><strong>Find the model name.</strong> Open <code>http://localhost:1234/v1/models</code> and copy the <code>id</code> of your model.</li>
-          <li><strong>Fill in your <code>.env</code> file</strong> (copy <code>.env.example</code> if you don't have one) with these three values, then restart the app:</li>
+          <li><strong>Run this app on the same computer</strong> (<code>uvicorn app.main:app --reload</code>).</li>
+          <li><strong>Choose Local LM Studio.</strong> On <a href="#practice">Practice</a>, expand <em>AI provider</em>, select <em>Local LM Studio</em>, pick your loaded model from the <em>Model</em> dropdown (press <em>Refresh</em> after loading one) and press <em>Connect</em>.</li>
         </ol>
-        <pre class="code" tabindex="0">API URL    http://localhost:1234/v1/chat/completions
-API key    lm-studio
-Model      google/gemma-3-4b</pre>
         <ul class="notes">
-          <li>LM Studio ignores the key, so any placeholder works.</li>
-          <li>The three settings are the first lines of <code>.env.example</code>: the URL, the key and the model.</li>
-          <li>Local models run slowly on a CPU. Add a longer <code>AI_TIMEOUT_SECONDS</code> (for example 120) if requests time out.</li>
+          <li>No key is needed. A different LM Studio address can be set with <code>LMSTUDIO_URL</code> in <code>.env</code>.</li>
+          <li>Local models run slowly on a CPU; the local timeout is 3 minutes (<code>LMSTUDIO_TIMEOUT_SECONDS</code>).</li>
         </ul>
       </div>
 
       <div class="card guide-card">
         <div class="guide-head"><span class="pill pill-alt">Models</span><h2>Choosing a model</h2></div>
-        <p class="muted">The model name is set in your <code>.env</code> file and must exist on the endpoint you use. On the hosted site the model is chosen by the site owner.</p>
+        <p class="muted">Pick one from the <em>Model</em> dropdown in the provider box. For Google it lists the Gemma models your key can use (press <em>Refresh</em> after pasting the key); for LM Studio it lists the models you have loaded.</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Where it runs</th><th>Good choice</th><th>Notes</th></tr></thead>
@@ -193,14 +225,14 @@ Model      google/gemma-3-4b</pre>
       <div class="card guide-card">
         <h2>Troubleshooting</h2>
         <dl class="faq">
-          <dt>The banner says the provider is not configured correctly</dt>
-          <dd>No key is set yet. Paste your key (Option 1) or fill in the URL, key and model in <code>.env</code> (Option 2).</dd>
+          <dt>The banner says the coach is not available</dt>
+          <dd>No key is set yet. Pick Google AI Studio or LM Studio in the provider dropdown on the Practice page and press <em>Connect</em>.</dd>
           <dt>"Coach feedback" says feedback was not available</dt>
           <dd>The model did not return valid JSON. Use a larger model.</dd>
           <dt>Requests time out</dt>
-          <dd>The model is too slow for the timeout. Use a smaller model or add a longer <code>AI_TIMEOUT_SECONDS</code> in <code>.env</code>.</dd>
+          <dd>The model is too slow for the timeout. Use a smaller model.</dd>
           <dt>Local model does not work on the deployed site</dt>
-          <dd>A hosted server cannot reach your computer. Use Option 1 there.</dd>
+          <dd>A hosted server cannot reach your computer. Use Google AI Studio there.</dd>
         </dl>
       </div>
     </section>
