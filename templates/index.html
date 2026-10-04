@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>English Practice Assistant</title>
+  <meta name="description" content="An AI communication coach that remembers your recurring mistakes and adapts your practice over time.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="mobile-bar">
+    <button type="button" class="icon-btn" id="menu-toggle" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <span class="brand-mark" aria-hidden="true">EP</span>
+    <strong>English Practice</strong>
+  </div>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+    <a class="brand" href="#home" aria-label="English Practice Assistant home">
+      <span class="brand-mark" aria-hidden="true">EP</span>
+      <span class="brand-text"><strong>English Practice</strong><small>Your AI speaking coach</small></span>
+    </a>
+
+    <nav aria-label="Main" class="side-nav">
+      <p class="side-label">Menu</p>
+      <a href="#home" data-nav="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#practice" data-nav="practice">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+        <span>Practice</span>
+      </a>
+      <a href="#progress" data-nav="progress">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <span>Progress</span>
+      </a>
+      <a href="#guide" data-nav="guide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5v-16ZM4 19.5A2.5 2.5 0 0 1 6.5 17H20"/></svg>
+        <span>Setup guide</span>
+      </a>
+    </nav>
+
+    <div class="side-foot">
+      <p class="side-note">Powered by Gemma</p>
+    </div>
+  </aside>
+
+  <div class="content">
+  <div id="banner" class="banner" role="status" hidden></div>
+
+  <main id="main" tabindex="-1">
+    <!-- HOME -->
+    <section id="view-home" class="view" aria-labelledby="hero-title">
+      <div class="hero">
+        <p class="eyebrow">A personal English coach that remembers how you communicate.</p>
+        <h1 id="hero-title">Practice English.<br>Build confidence.<br><span class="gradient-text">Remember what you're learning.</span></h1>
+        <p class="lead">An AI communication coach that remembers your recurring mistakes and adapts your practice over time.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#practice">Start Practicing</a>
+          <a class="btn btn-ghost" href="#how">See How It Works</a>
+        </div>
+      </div>
+
+      <div class="card summary" aria-live="polite">
+        <h2>Your learning summary</h2>
+        <div id="home-summary" class="muted">Loading…</div>
+      </div>
+
+      <div class="grid three" id="how">
+        <article class="card feature">
+          <h3>Conversation</h3>
+          <p>Practice through realistic conversations.</p>
+        </article>
+        <article class="card feature">
+          <h3>Memory</h3>
+          <p>Your recurring mistakes become part of your learning profile.</p>
+        </article>
+        <article class="card feature">
+          <h3>Workplace English</h3>
+          <p>Practice standups, meetings, code reviews, presentations, and more.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- PRACTICE -->
+    <section id="view-practice" class="view" aria-labelledby="practice-title" hidden>
+      <div id="setup">
+        <h1 id="practice-title" class="page-title">Choose how to practice</h1>
+        <div class="tabs" role="tablist" aria-label="Practice mode" id="mode-tabs"></div>
+        <div id="mode-panel" class="card" role="tabpanel"></div>
+        <details class="byok">
+          <summary>Use your own Gemma API key</summary>
+          <p class="small">New to this? Read the <a href="#guide">setup guide</a>.</p>
+          <form id="byok-form" class="byok-form">
+            <label for="byok-input">Gemma API key</label>
+            <input id="byok-input" type="password" autocomplete="off" minlength="8" maxlength="512">
+            <p class="muted small">Kept in server memory for this browser session only. Never stored or shown again.</p>
+            <div class="actions">
+              <button class="btn btn-ghost btn-small" type="submit">Use key</button>
+              <button class="btn btn-ghost btn-small" type="button" id="byok-clear">Remove key</button>
+            </div>
+          </form>
+        </details>
+      </div>
+
+      <div id="chat" hidden>
+        <div class="chat-head">
+          <div>
+            <h1 id="chat-title" class="page-title"></h1>
+            <p id="chat-sub" class="muted"></p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-small" id="new-session">New session</button>
+        </div>
+        <div id="messages" class="messages" aria-live="polite" aria-label="Conversation"></div>
+        <div id="chat-error" class="error" role="alert" hidden></div>
+        <form id="composer" class="composer">
+          <label for="input" class="sr-only">Your message</label>
+          <textarea id="input" rows="2" maxlength="2000" placeholder="Write your answer… (Enter to send, Shift+Enter for a new line)"></textarea>
+          <button class="btn btn-primary" id="send" type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- PROGRESS -->
+    <section id="view-progress" class="view" aria-labelledby="progress-title" hidden>
+      <h1 id="progress-title" class="page-title">Your progress</h1>
+      <p id="disclaimer" class="muted"></p>
+      <div id="progress-body">Loading…</div>
+    </section>
+
+    <!-- GUIDE -->
+    <section id="view-guide" class="view guide" aria-labelledby="guide-title" hidden>
+      <h1 id="guide-title" class="page-title">Setup guide</h1>
+      <p class="lead">Connect a Gemma model so your coach can reply and give feedback. Choose the option that fits you.</p>
+
+      <div class="card guide-card">
+        <div class="guide-head"><span class="pill">Option 1</span><h2>Use your own API key (hosted)</h2></div>
+        <p class="muted">Best when you are using the deployed site. Your key is only used to call the model for your session.</p>
+        <ol class="steps">
+          <li><strong>Get a key.</strong> Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>, sign in and choose <em>Create API key</em>. Copy it.</li>
+          <li><strong>Open the key box.</strong> Go to <a href="#practice">Practice</a> and expand <em>Use your own Gemma API key</em>.</li>
+          <li><strong>Paste and save.</strong> Paste the key and press <em>Use key</em>. The warning banner at the top should disappear.</li>
+          <li><strong>Start practicing.</strong> Pick a mode and press <em>Start practice</em>.</li>
+        </ol>
+        <ul class="notes">
+          <li>The key is kept in server memory for about an hour and is never stored or shown again. Paste it again if it expires.</li>
+          <li>Use <em>Remove key</em> to clear it at any time.</li>
+          <li>Never share your key or paste it into other people's sites.</li>
+        </ul>
+      </div>
+
+      <div class="card guide-card">
+        <div class="guide-head"><span class="pill">Option 2</span><h2>Run a local model with LM Studio</h2></div>
+        <p class="muted">Free and private, but it only works when you run this app on your own computer.</p>
+        <ol class="steps">
+          <li><strong>Download a model.</strong> In <a href="https://lmstudio.ai" target="_blank" rel="noopener noreferrer">LM Studio</a>, search for <code>gemma 3 4b</code> and download the instruct version (Q4_K_M).</li>
+          <li><strong>Start the server.</strong> Open the <em>Developer</em> tab, load the model and switch the server on. The default address is <code>http://localhost:1234</code>.</li>
+          <li><strong>Find the model name.</strong> Open <code>http://localhost:1234/v1/models</code> and copy the <code>id</code> of your model.</li>
+          <li><strong>Fill in your <code>.env</code> file</strong> (copy <code>.env.example</code> if you don't have one) with these three values, then restart the app:</li>
+        </ol>
+        <pre class="code" tabindex="0">API URL    http://localhost:1234/v1/chat/completions
+API key    lm-studio
+Model      google/gemma-3-4b</pre>
+        <ul class="notes">
+          <li>LM Studio ignores the key, so any placeholder works.</li>
+          <li>The three settings are the first lines of <code>.env.example</code>: the URL, the key and the model.</li>
+          <li>Local models run slowly on a CPU. Add a longer <code>AI_TIMEOUT_SECONDS</code> (for example 120) if requests time out.</li>
+        </ul>
+      </div>
+
+      <div class="card guide-card">
+        <div class="guide-head"><span class="pill pill-alt">Models</span><h2>Choosing a model</h2></div>
+        <p class="muted">The model name is set in your <code>.env</code> file and must exist on the endpoint you use. On the hosted site the model is chosen by the site owner.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Where it runs</th><th>Good choice</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Hosted (Google)</td><td><code>gemma-4-31b-it</code></td><td>Most accurate feedback. Needs an API key.</td></tr>
+              <tr><td>Local, 16 GB RAM, no GPU</td><td>Gemma 3 4B</td><td>Best balance of speed and valid JSON feedback.</td></tr>
+              <tr><td>Local, strong GPU</td><td>Gemma 3 12B or larger</td><td>Better corrections and explanations.</td></tr>
+              <tr><td>Local, any machine</td><td>Gemma 3 1B or smaller</td><td>Often returns broken feedback. Avoid.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card guide-card">
+        <h2>Troubleshooting</h2>
+        <dl class="faq">
+          <dt>The banner says the provider is not configured correctly</dt>
+          <dd>No key is set yet. Paste your key (Option 1) or fill in the URL, key and model in <code>.env</code> (Option 2).</dd>
+          <dt>"Coach feedback" says feedback was not available</dt>
+          <dd>The model did not return valid JSON. Use a larger model.</dd>
+          <dt>Requests time out</dt>
+          <dd>The model is too slow for the timeout. Use a smaller model or add a longer <code>AI_TIMEOUT_SECONDS</code> in <code>.env</code>.</dd>
+          <dt>Local model does not work on the deployed site</dt>
+          <dd>A hosted server cannot reach your computer. Use Option 1 there.</dd>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>English Practice Assistant · Powered by Gemma · Scores are approximate learning indicators.</p>
+  </footer>
+  </div>
+  </div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
