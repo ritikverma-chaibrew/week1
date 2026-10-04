@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -27,6 +28,13 @@ SECURITY_HEADERS = {
 }
 
 
+async def _ensure_indexes(db) -> None:
+    try:
+        await mongodb.ensure_indexes(db)
+    except PyMongoError as exc:
+        logger.error("MongoDB unavailable at startup: %s", type(exc).__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -35,12 +43,11 @@ async def lifespan(app: FastAPI):
     owns_client = not hasattr(app.state, "db")
     if owns_client:
         app.state.client, app.state.db = mongodb.connect(settings)
-        try:
-            await mongodb.ensure_indexes(app.state.db)
-        except PyMongoError as exc:
-            logger.error("MongoDB unavailable at startup: %s", type(exc).__name__)
+        # Never block startup on MongoDB: the port must open quickly or the host's deploy times out.
+        index_task = asyncio.create_task(_ensure_indexes(app.state.db))
     yield
     if owns_client:
+        index_task.cancel()
         await app.state.client.close()
 
 
