@@ -94,6 +94,9 @@ window.addEventListener("hashchange", route);
 function syncChatLayout() {
   const chatting = !!state.conversationId && !$("view-practice").hidden;
   document.querySelector(".shell").classList.toggle("compact", chatting);
+  const layout = document.querySelector(".practice-layout");
+  layout.classList.toggle("chatting", chatting);
+  if (!chatting) layout.classList.remove("provider-open");
 }
 
 function syncModeLinks() {
@@ -281,6 +284,7 @@ ai.subscribe((st) => { // the Start button depends on the status, so re-render o
 function showProviderPanel() {
   const go = () => {
     const details = $("byok-details");
+    details.closest(".practice-layout").classList.add("provider-open"); // hidden during a chat
     details.open = true;
     const panel = details.closest(".provider-panel");
     panel.classList.remove("attention");
@@ -292,6 +296,12 @@ function showProviderPanel() {
   if (location.hash !== "#practice") { location.hash = "#practice"; setTimeout(go, 50); } else go();
 }
 $("banner-connect").addEventListener("click", showProviderPanel);
+for (const id of ["ai-badge", "ai-dot"]) {
+  $(id).addEventListener("click", (e) => { e.preventDefault(); setMenu(false); showProviderPanel(); });
+}
+ai.subscribe((st) => { // once connected mid-chat, tuck the provider panel away again
+  if (st.status === "connected") document.querySelector(".practice-layout").classList.remove("provider-open");
+});
 
 /* ---------- home ---------- */
 function dataNote(p) {
