@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: english-practice-assistant
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: AI_PROVIDER
+        value: gemma
+      - key: DATABASE_NAME
+        value: english_coach
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMMA_API_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+      - key: GEMMA_MODEL
+        value: gemma-4-31b-it
+      - key: GEMMA_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
