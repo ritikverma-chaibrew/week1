@@ -19,6 +19,7 @@ async def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
 
+@router.get("/health", include_in_schema=False)
 @router.get("/api/health")
 async def health(request: Request, settings: Settings = Depends(get_config)):
     state = ai_state_for(request, peek_user(request, settings), settings)
