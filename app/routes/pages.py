@@ -23,4 +23,5 @@ async def index(request: Request):
 @router.get("/api/health")
 async def health(request: Request, settings: Settings = Depends(get_config)):
     state = ai_state_for(request, peek_user(request, settings), settings)
-    return {"status": "ok", "ai": state, "ai_message": AI_MESSAGES.get(state)}
+    return {"status": "ok", "ai": state, "ai_message": AI_MESSAGES.get(state)} 
+
