@@ -129,6 +129,8 @@ a { color: var(--accent); }
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
   }
   .compact .side-nav a[aria-current="page"]::before { left: -0.5rem; }
+  .compact .side-foot { width: 100%; align-items: center; }
+  .compact .ai-badge { width: 44px; height: 44px; }
 }
 .mobile-bar { display: none; }
 .icon-btn { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; }
@@ -241,6 +243,11 @@ main:has(#view-practice:not([hidden])) { max-width: 1240px; }
   .mode-cards { grid-template-columns: 1fr; }
   .provider-panel { position: static; }
 }
+/* during a chat the provider panel is hidden so the conversation gets the full width;
+   it comes back above the chat when the user asks to (re)connect */
+.practice-layout.chatting { grid-template-columns: minmax(0, 1fr); max-width: 920px; margin: 0 auto; }
+.practice-layout.chatting:not(.provider-open) .provider-panel { display: none; }
+.practice-layout.chatting .provider-panel { position: static; }
 .model-row { display: flex; gap: 0.5rem; align-items: center; }
 .byok-form { margin-top: 0.75rem; display: grid; gap: 0.5rem; max-width: 420px; }
 input, textarea, select { max-width: 100%; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0.65rem 0.9rem; width: 100%; }
