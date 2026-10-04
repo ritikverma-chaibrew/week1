@@ -16,7 +16,14 @@ class Settings(BaseSettings):
     gemma_api_url: str | None = None
     gemma_api_key: str | None = None
     gemma_model: str | None = None
-    ai_timeout_seconds: float = 30.0
+    ai_timeout_seconds: float = 60.0
+
+    # Choices offered in the UI dropdown.
+    lmstudio_url: str = "http://localhost:1234/v1/chat/completions"
+    lmstudio_model: str = "google/gemma-3-4b"
+    lmstudio_timeout_seconds: float = 180.0
+    google_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    google_model: str = "gemma-4-31b-it"
 
     secret_key: str = "dev-only-change-me"
     max_context_messages: int = 8

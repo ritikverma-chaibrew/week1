@@ -3,9 +3,29 @@ from app.services.ai.base import AIConfigError, AIProvider, AIUnavailableError
 from app.services.ai.gemma import GemmaProvider
 
 
-def build_provider(settings: Settings, api_key: str | None = None) -> AIProvider:
-    """Create the configured provider, or raise a user-safe AIError if it cannot be used."""
-    key = (api_key or settings.gemma_api_key or "").strip()
+def build_provider(settings: Settings, session: dict | None = None) -> AIProvider:
+    """Create the provider for the learner's dropdown choice, else the server's .env settings.
+
+    `session` is {"mode": "lmstudio" | "google", "api_key": str, "model": str}.
+    """
+    if session:
+        model = (session.get("model") or "").strip()
+        if session["mode"] == "lmstudio":
+            return GemmaProvider(
+                settings.lmstudio_url,
+                "lm-studio",  # LM Studio ignores the key
+                model or settings.lmstudio_model,
+                timeout=settings.lmstudio_timeout_seconds,
+                label="LM Studio",
+            )
+        return GemmaProvider(
+            settings.google_url,
+            session["api_key"],
+            model or settings.google_model,
+            timeout=settings.ai_timeout_seconds,
+            label="Google AI Studio",
+        )
+    key = (settings.gemma_api_key or "").strip()
     url = (settings.gemma_api_url or "").strip()
     if not url and not key:
         raise AIUnavailableError()

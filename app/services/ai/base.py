@@ -17,13 +17,16 @@ class AIError(Exception):
 
 class AIUnavailableError(AIError):
     message = (
-        "AI provider unavailable. You can configure GEMMA_API_URL and GEMMA_API_KEY "
-        "to enable live AI conversations."
+        "The coach is not available right now. It will be available once you connect "
+        "an API key (or LM Studio) in the AI provider panel."
     )
 
 
 class AIConfigError(AIError):
-    message = "Live AI is not configured correctly. Please check the Gemma provider settings."
+    message = (
+        "The coach is not available right now. It will be available once a working "
+        "API key is connected in the AI provider panel."
+    )
 
 
 class AIRateLimitError(AIError):

@@ -24,12 +24,12 @@ Chatbot → AI coach → AI coach **with memory** → personalised English coach
 
 ## Features
 
-- **Free conversation**, **targeted practice** (grammar, natural English, vocabulary, professional English, *recurring mistakes*) and **9 workplace scenarios** (standup, explain a bug, code review, ask for help, manager update, client meeting, technical presentation, disagree professionally, project status).
+- **Normal conversation** (chat about anything), **targeted practice** (grammar, natural English, vocabulary, professional English, *recurring mistakes*) and **9 workplace scenarios** (standup, explain a bug, code review, ask for help, manager update, client meeting, technical presentation, disagree professionally, project status).
 - Concise, collapsible feedback: natural version, short why, pattern name. No over-correcting.
 - "Recurring pattern detected" notices once a mistake type has appeared twice or more.
 - Progress page: skill indicators, recurring-mistake bars, strengths, recent sessions.
 - Only real data: progress is computed from your own sessions. With no data it says so; with little data it still shows results plus a "limited data" notice (reliable after about 5 evaluated messages).
-- Optional bring-your-own Gemma key (server memory only).
+- In-app dropdown to run the coach with **local LM Studio** or a **Google AI Studio API key** (saved in your browser for 30 minutes, then deleted automatically; the app reconnects with it until then).
 - Works without AI credentials (browse); chat explains how to enable live AI.
 
 ## How It Works
@@ -78,13 +78,31 @@ uvicorn app.main:app --reload
 
 Open http://127.0.0.1:8000.
 
+## Setup: choose how the coach runs
+
+On the **Practice** page, expand **AI provider**, pick an option from the dropdown and press **Connect**. The choice applies to your browser session; no `.env` AI settings are required.
+
+**Option A: Google AI Studio (works locally and on a deployed site)**
+1. Create a key at https://aistudio.google.com/apikey.
+2. Select *Google AI Studio (API key)*, paste the key, pick a model from the *Model* dropdown, press *Connect*.
+
+**Option B: Local LM Studio (only when the app runs on your own computer)**
+1. Install [LM Studio](https://lmstudio.ai), download a Gemma instruct model (e.g. `gemma 3 4b`) and start the server from the *Developer* tab (default `http://localhost:1234`).
+2. Run the app locally (steps above).
+3. Select *Local LM Studio*, pick your model from the *Model* dropdown (it lists what LM Studio has loaded; press *Refresh* after loading one), press *Connect*.
+
+A hosted server (e.g. Render) cannot reach LM Studio on your computer, so use Option A there. Connecting checks the key/server first and shows a clear error if it fails.
+
 ## Environment Variables
 
 | Variable | Purpose |
 | --- | --- |
 | `AI_PROVIDER` | `gemma` (only provider implemented) |
-| `GEMMA_API_URL` | Full chat-completions URL of your Gemma endpoint |
-| `GEMMA_API_KEY` | Bearer key for that endpoint (server-side only) |
+| `GEMMA_API_URL` | Optional server-wide default: full chat-completions URL (used when no dropdown choice is made) |
+| `GEMMA_API_KEY` | Optional server-wide default key (server-side only) |
+| `LMSTUDIO_URL` | LM Studio endpoint (default `http://localhost:1234/v1/chat/completions`) |
+| `LMSTUDIO_MODEL` / `GOOGLE_MODEL` | Default model for each dropdown option |
+| `LMSTUDIO_TIMEOUT_SECONDS` | Local timeout (default 180) |
 | `GEMMA_MODEL` | Model name sent to the endpoint |
 | `MONGODB_URI` | MongoDB / Atlas connection string |
 | `DATABASE_NAME` | Defaults to `english_coach` |
@@ -99,7 +117,7 @@ Create a free Atlas cluster, add a database user, allow your IP (or Render's egr
 
 ## Deployment
 
-Render: push the repo, create a Blueprint from `render.yaml` (or a Web Service with build `pip install -r requirements.txt` and start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`), then set `MONGODB_URI`, `GEMMA_API_URL`, `GEMMA_API_KEY`, `GEMMA_MODEL`. `SECRET_KEY` is generated. Health check: `/api/health`. A `Dockerfile` is included; no model weights are bundled.
+Render: push the repo and create a Web Service with build `pip install -r requirements.txt` and start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Set `MONGODB_URI` and `SECRET_KEY`; AI settings are optional because users choose Google AI Studio in the dropdown (or set `GEMMA_API_URL`, `GEMMA_API_KEY`, `GEMMA_MODEL` as a server-wide default). Health check path: `/api/health` (or `/health`). `render.yaml` is only an optional Render Blueprint; the app code never reads it. A `Dockerfile` is included; no model weights are bundled.
 
 ## Project Structure
 
@@ -131,4 +149,5 @@ Voice conversations, speech recognition, pronunciation analysis, personalised cu
 ## Known Limitations
 
 - Identity is an anonymous signed cookie; there are no accounts.
-- Gemma's output quality depends on the model served; JSON compliance is validated and retried once.
+- Gemma's output quality depends on the model served; JSON compliance is validated and retried once. 
+ 

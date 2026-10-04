@@ -29,6 +29,17 @@ THOUGHT_HEADROOM = 1500
 _THOUGHT_RE = re.compile(r"<thought>.*?</thought>", re.DOTALL)
 
 
+def _upstream_message(resp: httpx.Response) -> str:
+    """The provider's own error text, trimmed; safe to show (it never contains our key)."""
+    try:
+        body = resp.json()
+        body = body[0] if isinstance(body, list) and body else body
+        message = body["error"]["message"]
+    except (ValueError, KeyError, IndexError, TypeError):
+        return ""
+    return str(message).strip().replace(chr(10), " ")[:200]
+
+
 def strip_thoughts(text: str) -> str:
     """Drop Gemma's reasoning block; an unclosed one means the reply was cut off."""
     text = _THOUGHT_RE.sub("", text)
@@ -67,7 +78,9 @@ class GemmaProvider(AIProvider):
         model: str | None,
         client: httpx.AsyncClient | None = None,
         timeout: float = 30.0,
+        label: str = "the AI server",
     ):
+        self._label = label
         self._url = api_url
         self._key = api_key
         self._model = model or "gemma"
@@ -90,8 +103,22 @@ class GemmaProvider(AIProvider):
                     },
                 )
             except httpx.TimeoutException as exc:
-                logger.warning("Gemma request timed out")
-                raise AIRequestError() from exc
+                logger.warning("Gemma request timed out (attempt %d)", attempt)
+                if attempt < MAX_ATTEMPTS - 1:
+                    continue
+                raise AIRequestError(
+                    "The coach took too long to answer. Please try again."
+                ) from exc
+            except httpx.ConnectError as exc:
+                logger.warning("Cannot connect to %s", self._label)
+                raise AIRequestError(
+                    f"Can't reach {self._label}. "
+                    + (
+                        "Start the LM Studio server and run this app on the same computer."
+                        if self._label == "LM Studio"
+                        else "Please try again."
+                    )
+                ) from exc
             except httpx.HTTPError as exc:
                 logger.warning("Gemma request failed: %s", type(exc).__name__)
                 raise AIRequestError() from exc
@@ -102,10 +129,23 @@ class GemmaProvider(AIProvider):
                 continue
             break
 
+        if resp.status_code >= 400:
+            logger.warning("Gemma upstream %s: %s", resp.status_code, resp.text[:300])
         if resp.status_code == 429:
             raise AIRateLimitError()
-        if resp.status_code in (401, 403, 404):
-            raise AIConfigError()
+        if resp.status_code in (401, 403) or (
+            resp.status_code == 400 and "api key" in resp.text.lower()
+        ):
+            raise AIConfigError(
+                f"{self._label} rejected the API key. Check that it is correct and enabled."
+            )
+        if resp.status_code in (400, 404):
+            detail = _upstream_message(resp)
+            raise AIConfigError(
+                f"{self._label} could not use model \"{self._model}\" ({resp.status_code}). "
+                "Pick another model in the dropdown."
+                + (f" Details: {detail}" if detail else "")
+            )
         if resp.status_code >= 400:
             raise AIRequestError()
         try:
@@ -114,6 +154,10 @@ class GemmaProvider(AIProvider):
             logger.warning("Unexpected Gemma response shape")
             raise AIResponseError() from exc
         return strip_thoughts(content or "")
+
+    async def ping(self) -> None:
+        """Cheap call used to verify a key before accepting it."""
+        await self._complete([{"role": "user", "content": "Say OK."}], 0.0, 5)
 
     async def generate_response(self, context: CoachContext, user_message: str) -> str:
         system = prompts.build_reply_system_prompt(context)
